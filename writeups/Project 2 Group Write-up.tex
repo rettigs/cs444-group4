@@ -32,7 +32,7 @@ As in our previous assignment, Project 1, we maintained our team choice of using
 \texttt{make[1]: *** No rule to make target `block/sstf-iosched.o', needed by\\ `block/built-in.o'.  Stop.}\\
 \texttt{make: *** [block] Error 2}\\
 
-The 
+This issue was rooted in a naming issue that had the \texttt{block/Makefile} refering to \texttt{sstf-iosched.o} and the actual SSTF I/O scheduler file being named \texttt{sstf\_iosched.o} instead. After resolving this conflict, we were able to use the \texttt{make menuconfig}, \texttt{make}, \texttt{make modules}, and \texttt{make modules\_install} commands to compile the modified Linux Kernel. We installed it into the test hardware system using the \texttt{make install} command.
 		
 \section{Version Control Log}
 
