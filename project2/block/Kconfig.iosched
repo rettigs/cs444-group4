@@ -36,6 +36,14 @@ config IOSCHED_CFQ
 
 	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
 
+config IOSCHED_SSTF
+	tristate "SSTF I/O scheduler"
+	default y
+	---help---
+	  The Shortest-Seek-Time-First I/O scheduler tries to reduce
+	  seek distance by ordering blocks based upon seek distance
+	  to the head. Starvation possibilities exist during high load.
+
 config CFQ_GROUP_IOSCHED
 	bool "CFQ Group Scheduling support"
 	depends on IOSCHED_CFQ && BLK_CGROUP
