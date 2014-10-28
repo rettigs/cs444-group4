@@ -15,7 +15,7 @@ struct sstf_data {
 
 static int sstf_dispatch(struct request_queue *q, int force)
 {
-	printk("In dispatch.\n");
+	printk("dispatching request...\n");
 	struct sstf_data *nd = q->elevator->elevator_data;
 
 	if (!list_empty(&nd->queue)) {
@@ -28,24 +28,22 @@ static int sstf_dispatch(struct request_queue *q, int force)
 		}
 
 		if (nd->queue_count == 1) {
-			printk("Only one item in queue, no calcs needed.\n");
 			list_del_init(&rq->queuelist);
 			nd->queue_count--;
 		}
 
 		else {
-			printk("More than one item in queue to dispatch. \n");
-			//Gets the pointers to the requests that we want
+			//Get the pointers to the requests that we want
 			struct request* curr_req = list_entry(nd->next_to_dispatch, struct request, queuelist);
 			struct request* prev_req = list_entry(nd->next_to_dispatch->prev, struct request, queuelist);
 			struct request* next_req = list_entry(nd->next_to_dispatch->next, struct request, queuelist);
 		
-			//Gets the sectors	
+			//Get the sectors	
 			unsigned long the_curr = (unsigned long)blk_rq_pos(curr_req);
 			unsigned long the_prev = (unsigned long)blk_rq_pos(prev_req);
 			unsigned long the_next = (unsigned long)blk_rq_pos(next_req);
 		
-			//Gets the differences	
+			//Get the differences	
 			unsigned long diff_prev = 0;
 			unsigned long diff_next = 0;
 
@@ -66,16 +64,12 @@ static int sstf_dispatch(struct request_queue *q, int force)
 				diff_next = 0;
 			}
 
-			printk("diff_prev = %lu, diff_next = %lu\n", diff_prev, diff_next);
-
 			//If prev is closer to current, then dispatch prev next
 			if (diff_prev < diff_next) {
-				printk("Diff_prev < diff_next\n");
 				nd->next_to_dispatch = nd->next_to_dispatch->prev;
 			}
 			//else choose next for the next to dispatch
 			else { //(diff_prev >= diff_next) {
-				printk("Diff_next <= diff_prev\n");
 				nd->next_to_dispatch = nd->next_to_dispatch->next;
 			}	
 			
@@ -84,9 +78,10 @@ static int sstf_dispatch(struct request_queue *q, int force)
 			nd->queue_count--;
 		}
 
-        printk("Dispatching :%lu\n", (unsigned long)blk_rq_pos(rq));
+        printk("dispatching request: %lu\n", (unsigned long)blk_rq_pos(rq));
 		elv_dispatch_sort(q, rq);
-        printk("Done dispatching. Queue count at %d", nd->queue_count);
+        printk("dispatch complete\n");
+        printk("queue count: %d", nd->queue_count);
         return 1;
     }
     return 0;
@@ -98,7 +93,7 @@ static void sstf_print_list(struct request_queue *q)
 
 	struct list_head* position_print;
 	struct request* print_node;
-	printk("Printing List: ");
+	printk("print list: ");
 	list_for_each(position_print, &nd->queue) {
 		print_node = list_entry(position_print, struct request, queuelist);
 		printk("%lu,", (unsigned long)blk_rq_pos(print_node));
@@ -112,7 +107,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 	struct sstf_data *nd = q->elevator->elevator_data;
 	int added = 0;
 	
-	printk("Adding :%lu\n", (unsigned long)blk_rq_pos(rq));
+	printk("adding request: %lu\n", (unsigned long)blk_rq_pos(rq));
 
 	sstf_print_list(q);
 
@@ -121,7 +116,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 		list_add(&rq->queuelist, &nd->queue);
 		nd->next_to_dispatch = nd->queue.next;  
 		nd->queue_count++;
-        printk ("List Was Empty\n");
+        printk ("list is empty\n");
 		sstf_print_list(q);
 		return;
 	}
@@ -141,7 +136,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 			list_add(&rq->queuelist, position);
 			nd->queue_count++;
 			added = 1;
-        	printk ("Adding second item; next= %p and prev = %p\n" , position->next, position->prev );
+        	printk ("next= %p and prev = %p\n" , position->next, position->prev );
 			break;
 		}	
 
@@ -150,7 +145,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 			list_add(&rq->queuelist, position);
 			nd->queue_count++;
 			added = 1;
-        	printk ("Adding 3rd or higher item; next= %p and prev = %p\n" , position->next, position->prev);
+        	printk ("next= %p and prev = %p\n" , position->next, position->prev);
 			break;
 		}
     }
@@ -159,17 +154,18 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 		// Our new request must be bigger than all current, add it to the end
 		list_add_tail(&rq->queuelist, &nd->queue);
 		nd->queue_count++;
-		printk("Added to tail!\n");
+		printk("added to tail\n");
 	}
 
-	printk("After adding. Queue count at %d\n", nd->queue_count);
+	printk("adding complete\n");
+	printk("queue count: %d\n", nd->queue_count);
 	sstf_print_list(q);
 }
 
 static void *sstf_init_queue(struct request_queue *q)
 {
 	struct sstf_data *nd;
-	printk("This is initional queue");
+	printk("queue initialized\n");
 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
 	if (!nd)
 		return NULL;
