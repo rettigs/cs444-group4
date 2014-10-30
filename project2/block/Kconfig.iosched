@@ -37,7 +37,7 @@ config IOSCHED_CFQ
 	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
 
 config IOSCHED_SSTF
-	bool "SSTF I/O scheduler"
+	tristate "SSTF I/O scheduler"
 	default y
 	---help---
 	  The Shortest-Seek-Time-First I/O scheduler tries to reduce
@@ -67,6 +67,9 @@ choice
 	config DEFAULT_NOOP
 		bool "No-op"
 
+	config DEFAULT_SSTF
+		bool "SSTF" if IOSCHED_SSTF=y
+
 endchoice
 
 config DEFAULT_IOSCHED
@@ -74,6 +77,7 @@ config DEFAULT_IOSCHED
 	default "deadline" if DEFAULT_DEADLINE
 	default "cfq" if DEFAULT_CFQ
 	default "noop" if DEFAULT_NOOP
+	default "sstf" if DEFAULT_SSTF
 
 endmenu
 
