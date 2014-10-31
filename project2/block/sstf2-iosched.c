@@ -1,7 +1,11 @@
 /*
  * NOOP no more!(tm)
  * Exciting changes by Erin, Jafer, and John
- * currently: NONE!
+ * currently:
+ * sstf_data: added head_pos for disk head loc
+ * sstf_dispatch: dispatch closest to disk head
+ * sstf_add_request: add request to the queue, in order
+ * sstf_balance: keep request queue sentinel close to disk head
  */
 #include <linux/blkdev.h>
 #include <linux/elevator.h>
@@ -92,14 +96,14 @@ static int sstf_dispatch(struct request_queue *q, int force)
 			rq = prevrq;
 
 		list_del_init(&rq->queuelist);
-		nd->head_pos = rq->sector + rq->nr_sectors;
+		nd->head_pos = rq->sector + rq->nr_sectors - 1;
 		elv_dispatch_sort(q, rq);
 		//update queue head position
 		sstf_balance(nd);
 		if(rq_data_dir(rq) == 0)
-			printk("[SSTF] dsp READ %lu\n",rq->sector);
+			printk(KERN_INFO "[SSTF] dsp READ %ld\n",(long)rq->sector);
 		else
-			printk("[SSTF] dsp WRITE %lu\n",rq->sector);
+			printk(KERN_INFO "[SSTF] dsp WRITE %ld\n",(long)rq->sector);
 		return 1;
 	}
 	return 0;
@@ -149,7 +153,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 		}
 	}
 	__list_add(&rq->queuelist, &rprev->queuelist, &rnext->queuelist);
-	printk(KERN_INFO "[SSTF] add %s %ld",rq->cmd,(long) rq->sector);
+	printk(KERN_INFO "[SSTF] add %ld",(long) rq->sector);
 }
 
 static int noop_queue_empty(struct request_queue *q)
@@ -232,3 +236,4 @@ module_exit(noop_exit);
 MODULE_AUTHOR("Erin, Jafer, John");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("NOOP no more!(tm) IO scheduler ");
+
