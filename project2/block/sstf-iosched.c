@@ -8,22 +8,21 @@
 struct sstf_data {
 	struct list_head queue;
 	sector_t last_sector; 
-	struct list_head* next_to_dispatch;
+	struct list_head* enqueue;
 	
 	int queue_count;
 };
 
 static int sstf_dispatch(struct request_queue *q, int force)
 {
-	printk("dispatching request...\n");
 	struct sstf_data *nd = q->elevator->elevator_data;
 
 	if (!list_empty(&nd->queue)) {
 		struct request *rq;
-		rq = list_entry(nd->next_to_dispatch, struct request, queuelist);
+		rq = list_entry(nd->enqueue, struct request, queuelist);
 
 		if (rq == 0) {
-			printk("failed");
+			printk("failed to add request to queue\n");
 			return 0;
 		}
 
@@ -34,43 +33,29 @@ static int sstf_dispatch(struct request_queue *q, int force)
 
 		else {
 			//Get the pointers to the requests that we want
-			struct request* curr_req = list_entry(nd->next_to_dispatch, struct request, queuelist);
-			struct request* prev_req = list_entry(nd->next_to_dispatch->prev, struct request, queuelist);
-			struct request* next_req = list_entry(nd->next_to_dispatch->next, struct request, queuelist);
+			struct request* curr_req = list_entry(nd->enqueue, struct request, queuelist);
+			struct request* prev_req = list_entry(nd->enqueue->prev, struct request, queuelist);
+			struct request* next_req = list_entry(nd->enqueue->next, struct request, queuelist);
 		
 			//Get the sectors	
-			unsigned long the_curr = (unsigned long)blk_rq_pos(curr_req);
-			unsigned long the_prev = (unsigned long)blk_rq_pos(prev_req);
-			unsigned long the_next = (unsigned long)blk_rq_pos(next_req);
+			unsigned long curr = (unsigned long)blk_rq_pos(curr_req);
+			unsigned long prev = (unsigned long)blk_rq_pos(prev_req);
+			unsigned long next = (unsigned long)blk_rq_pos(next_req);
 		
 			//Get the differences	
 			unsigned long diff_prev = 0;
 			unsigned long diff_next = 0;
 
-			if(the_prev > the_curr) {
-				diff_prev = the_prev - the_curr;
-			} else if (the_prev < the_curr) {
-				diff_prev = the_curr - the_prev;
-			} else {
-				// equal
-				diff_prev = 0;
-			}
+			diff_prev = abs(curr - prev);
+			diff_next = abs(curr - next);
 
-			if(the_next > the_curr) {
-				diff_next = the_next - the_curr;
-			} else if (the_next < the_curr) {
-				diff_next = the_curr - the_next;
-			} else {
-				diff_next = 0;
-			}
-
-			//If prev is closer to current, then dispatch prev next
+			//If prev is closer to current, then move enqueue to prev and dispatch
 			if (diff_prev < diff_next) {
-				nd->next_to_dispatch = nd->next_to_dispatch->prev;
+				nd->enqueue = nd->enqueue->prev;
 			}
-			//else choose next for the next to dispatch
-			else { //(diff_prev >= diff_next) {
-				nd->next_to_dispatch = nd->next_to_dispatch->next;
+			//else move enqueue to next and dispatch
+			else {
+				nd->enqueue = nd->enqueue->next;
 			}	
 			
 			//Delete currently dispatched request because it's finished
@@ -80,8 +65,6 @@ static int sstf_dispatch(struct request_queue *q, int force)
 
         printk("dispatching request: %lu\n", (unsigned long)blk_rq_pos(rq));
 		elv_dispatch_sort(q, rq);
-        printk("dispatch complete\n");
-        printk("queue count: %d", nd->queue_count);
         return 1;
     }
     return 0;
@@ -114,29 +97,30 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 	//If the list is empty, do a basic add and return
 	if (list_empty(&nd->queue)){
 		list_add(&rq->queuelist, &nd->queue);
-		nd->next_to_dispatch = nd->queue.next;  
+		nd->enqueue = nd->queue.next;  
 		nd->queue_count++;
         printk ("list is empty\n");
 		//sstf_print_list(q);
 		return;
 	}
 
-	struct list_head* position;
-	list_for_each(position , &nd->queue) { 
+	struct list_head* head;
+	list_for_each(head, &nd->queue) { 
 		
-		struct request* curr_req = list_entry(position, struct request, queuelist);
-		struct request* curr_req_next = list_entry(position->next, struct request, queuelist);
+		struct request* curr_req = list_entry(head, struct request, queuelist);
+		struct request* curr_req_next = list_entry(head->next, struct request, queuelist);
 		
 		sector_t curr_req_sector = blk_rq_pos(curr_req);
 		sector_t next_req_sector = blk_rq_pos(curr_req_next);
 		sector_t new_req_sector = blk_rq_pos(rq);
 	
+		printk ("curr= %lu and next= %lu\n" , (unsigned long)blk_rq_pos(curr_req), (unsigned long)blk_rq_pos(curr_req_next));
+
 		//This is for one item in the queue	
 		if (nd->queue_count == 1){
-			list_add(&rq->queuelist, position);
+			list_add(&rq->queuelist, head);
 			nd->queue_count++;
 			added = 1;
-        	printk ("next= %p and prev = %p\n" , position->next, position->prev );
 			break;
 		}	
 
@@ -145,7 +129,6 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 			list_add(&rq->queuelist, position);
 			nd->queue_count++;
 			added = 1;
-        	printk ("next= %p and prev = %p\n" , position->next, position->prev);
 			break;
 		}
     }
@@ -216,6 +199,6 @@ module_init(sstf_init);
 module_exit(sstf_exit);
 
 
-MODULE_AUTHOR("CS444-Group 4");
+MODULE_AUTHOR("CS444 - Group 4");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("SSTF IO scheduler");
