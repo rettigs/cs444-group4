@@ -109,7 +109,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 	
 	printk("adding request: %lu\n", (unsigned long)blk_rq_pos(rq));
 
-	sstf_print_list(q);
+	//sstf_print_list(q);
 
 	//If the list is empty, do a basic add and return
 	if (list_empty(&nd->queue)){
@@ -117,7 +117,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 		nd->next_to_dispatch = nd->queue.next;  
 		nd->queue_count++;
         printk ("list is empty\n");
-		sstf_print_list(q);
+		//sstf_print_list(q);
 		return;
 	}
 
@@ -159,7 +159,7 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 
 	printk("adding complete\n");
 	printk("queue count: %d\n", nd->queue_count);
-	sstf_print_list(q);
+	//sstf_print_list(q);
 }
 
 static void *sstf_init_queue(struct request_queue *q)

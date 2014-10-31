@@ -44,6 +44,14 @@ config IOSCHED_SSTF
 	  seek distance by ordering blocks based upon seek distance
 	  to the head. Starvation possibilities exist during high load.
 
+config IOSCHED_SSTF2
+	tristate "SSTF2 I/O scheduler"
+	default y
+	---help---
+	  The Shortest-Seek-Time-First v.2 I/O scheduler tries to reduce
+	  seek distance by ordering blocks based upon seek distance
+	  to the head. Starvation possibilities exist during high load.
+
 config CFQ_GROUP_IOSCHED
 	bool "CFQ Group Scheduling support"
 	depends on IOSCHED_CFQ && BLK_CGROUP
@@ -70,6 +78,9 @@ choice
 	config DEFAULT_SSTF
 		bool "SSTF" if IOSCHED_SSTF=y
 
+	config DEFAULT_SSTF2
+		bool "SSTF" if IOSCHED_SSTF=y
+
 endchoice
 
 config DEFAULT_IOSCHED
@@ -78,6 +89,7 @@ config DEFAULT_IOSCHED
 	default "cfq" if DEFAULT_CFQ
 	default "noop" if DEFAULT_NOOP
 	default "sstf" if DEFAULT_SSTF
+	default "sstf2" if DEFAULT_SSTF2
 
 endmenu
 
