@@ -58,6 +58,22 @@ void *search(void *list)
 
 void *insert(void *list)
 {
+//insert code (minux mutexing)
+
+	struct node *root = (struct node *)list;
+	struct node *conductor;
+
+
+	//iterate through linked list until we find the last element
+	while(conductor->next != NULL){
+		conducter = conductor->next;
+	}
+	stuct node *newelement;
+	newelement =  malloc(sizeof(struct node));
+	newelement->data = conducter->data + 1;
+	newelement->next = NULL;
+	conductor->next = newelement;
+	printf("Thread %u inserting %d into list\n", pthread_self(), newelement->data());
 	return 0;
 }
 
