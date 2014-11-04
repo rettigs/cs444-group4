@@ -65,6 +65,7 @@ void *insert(void *list)
 
 
 	//iterate through linked list until we find the last element
+	conductor = root;
 	while(conductor->next != NULL){
 		conductor = conductor->next;
 	}
@@ -83,5 +84,27 @@ void *insert(void *list)
 void *delete(void *list)
 {
 //delete code (minus mutexing)
+
+	struct node *root = (struct node *)list;
+	struct node *conductor;
+	struct node *conductortrail;
+	
+	//find last element in the linked list (I think we probably should just make a functio for this)
+	conductor = root;
+	if(root->next == NULL){
+		free(root);
+		root = NULL;
+	}
+	else{
+		conductortrail = root;
+		conductor = root->next;
+		while(conductor->next != NULL){
+			conductortrail = conductor;
+			conductor = conductor->next;
+		}
+		free(conductor);
+		conductortrail->next = NULL;
+	}
+	//remove the element 
 	return 0;
 }
