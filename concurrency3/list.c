@@ -49,7 +49,7 @@ void *search(void *list)
 
 	conductor = root;
 	while ( conductor != NULL ) {
-	    printf( "%d\n", conductor->data);
+	    printf( "Searcher %u found %d\n", pthread_self(), conductor->data);
 	    conductor = conductor->next;
 	}
 
@@ -58,7 +58,7 @@ void *search(void *list)
 
 void *insert(void *list)
 {
-//insert code (minux mutexing)
+//insert code (minus mutexing)
 
 	struct node *root = (struct node *)list;
 	struct node *conductor;
@@ -66,18 +66,22 @@ void *insert(void *list)
 
 	//iterate through linked list until we find the last element
 	while(conductor->next != NULL){
-		conducter = conductor->next;
+		conductor = conductor->next;
 	}
-	stuct node *newelement;
+	//create new element
+	struct node *newelement;
 	newelement =  malloc(sizeof(struct node));
-	newelement->data = conducter->data + 1;
+	newelement->data = conductor->data + 1;
 	newelement->next = NULL;
+	
+	//add it to the list
 	conductor->next = newelement;
-	printf("Thread %u inserting %d into list\n", pthread_self(), newelement->data());
+	printf("Thread %u inserting %d into list\n", pthread_self(), newelement->data);
 	return 0;
 }
 
 void *delete(void *list)
 {
+//delete code (minus mutexing)
 	return 0;
 }
