@@ -1,0 +1,67 @@
+#define NUM_SEARCHERS 2
+#define NUM_INSERTERS 2
+#define NUM_DELETERS 2
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+void *search(void *list);
+void *insert(void *list);
+void *delete(void *list);
+
+struct node {
+	int			data;
+	struct node	*next;
+};
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int main()
+{
+	struct node *root;
+	root = (struct node *) malloc(sizeof(struct node));
+	root->next = 0;
+	root->data = 5;
+
+	pthread_t searchers[NUM_SEARCHERS];
+	//pthread_t inserters[NUM_INSERTERS];
+	//pthread_t deleters[NUM_DELETERS];
+
+	int rc;
+	long t;
+	for (t = 0; t < NUM_SEARCHERS; t++) {
+		rc = pthread_create(&searchers[t], NULL, search, (void *)root);
+		if (rc) {
+			printf("ERROR: return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
+	}
+
+	pthread_exit(NULL);
+}
+
+void *search(void *list)
+{
+	struct node *root = (struct node *) list;
+	struct node *conductor;
+
+	conductor = root;
+	while ( conductor != NULL ) {
+	    printf( "%d\n", conductor->data);
+	    conductor = conductor->next;
+	}
+
+	return 0;
+}
+
+void *insert(void *list)
+{
+	return 0;
+}
+
+void *delete(void *list)
+{
+	return 0;
+}
