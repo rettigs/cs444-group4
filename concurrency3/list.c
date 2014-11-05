@@ -6,27 +6,41 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <semaphore.h>
+
 
 void *search(void *list);
 void *insert(void *list);
 void *delete(void *list);
+
+sem_t noSearchers, noInserters, insertlock, searchlock, insertMutex;
 
 struct node {
 	int			data;
 	struct node	*next;
 };
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int numsearchers = 0;
+int numinserters = 0;
+
 
 int main()
 {
 	struct node *root;
 	root = (struct node *) malloc(sizeof(struct node));
-	root->next = 0;
-	root->data = 5;
+	root->next = NULL;
+	root->data = 1;
+	
+	//Semaphore Initialization
+	sem_init(&noSearchers, 0, 1);
+	sem_init(&noInserters, 0, 1);
+	sem_init(&insertlock, 0, 1);
+	sem_init(&searchlock, 0, 1);
+	sem_init(&insertMutex, 0, 1);
+	
 
 	pthread_t searchers[NUM_SEARCHERS];
-	//pthread_t inserters[NUM_INSERTERS];
+	pthread_t inserters[NUM_INSERTERS];
 	//pthread_t deleters[NUM_DELETERS];
 
 	int rc;
@@ -39,46 +53,78 @@ int main()
 		}
 	}
 
+	for(t = 0; t < NUM_INSERTERS; t++){
+		rc = pthread_create(&inserters[t], NULL, insert, (void *)root);
+		if(rc){
+			printf("ERROR: return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
+	}
+
 	pthread_exit(NULL);
 }
 
 void *search(void *list)
 {
+	srand(time(NULL));
 	struct node *root = (struct node *) list;
 	struct node *conductor;
+	int sleeptime = (rand() % 9) + 1;
+	printf("Searcher %u going to sleep for %d\n", pthread_self(), sleeptime);    
+	sleep(sleeptime);	
 
+	sem_wait(&searchlock);
+	numsearchers++;
+	printf("added searcher! current # of searchers  %d\n", numsearchers);
+	if(numsearchers == 1) sem_wait(&noSearchers);
+	sem_post(&searchlock);
 	conductor = root;
 	while ( conductor != NULL ) {
 	    printf( "Searcher %u found %d\n", pthread_self(), conductor->data);
 	    conductor = conductor->next;
 	}
-
+	sem_wait(&searchlock);
+	numsearchers--;
+	printf("search complete! current # of searchers %d\n", numsearchers);
+	if(numsearchers == 0) sem_post(&noSearchers);
+	sem_post(&searchlock);
 	return 0;
 }
 
 void *insert(void *list)
 {
-//insert code (minus mutexing)
 
+	
 	struct node *root = (struct node *)list;
 	struct node *conductor;
 
-
-	//iterate through linked list until we find the last element
-	conductor = root;
-	while(conductor->next != NULL){
-		conductor = conductor->next;
-	}
-	//create new element
-	struct node *newelement;
-	newelement =  malloc(sizeof(struct node));
-	newelement->data = conductor->data + 1;
-	newelement->next = NULL;
+	while(1){
+		sem_wait(&insertlock);
+		numinserters++;
+		printf("Number of Inserters: %d\n", numinserters);
+		if(numinserters == 1); sem_wait(&noInserters);
+		sem_post(&insertlock);
+		sem_wait(&insertMutex);
+		//iterate through linked list until we find the last element
+		conductor = root;
+		while(conductor->next != NULL){
+			conductor = conductor->next;
+		}
+		//create new element
+		struct node *newelement;
+		newelement =  malloc(sizeof(struct node));
+		newelement->data = conductor->data + 1;
+		newelement->next = NULL;
 	
-	//add it to the list
-	conductor->next = newelement;
-	printf("Thread %u inserting %d into list\n", pthread_self(), newelement->data);
-	return 0;
+		//add it to the list
+		conductor->next = newelement;
+		printf("Thread %u inserting %d into list\n", pthread_self(), newelement->data);
+		sem_post(&insertMutex);
+		sem_wait(&insertlock);
+		numinserters--;
+		if(numinserters == 0) sem_post(&noInserters);
+		sem_post(&insertlock);
+	}
 }
 
 void *delete(void *list)
