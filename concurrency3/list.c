@@ -66,29 +66,29 @@ int main()
 
 void *search(void *list)
 {
-	srand(time(NULL));
 	struct node *root = (struct node *) list;
 	struct node *conductor;
-	int sleeptime = (rand() % 9) + 1;
-	printf("Searcher %u going to sleep for %d\n", pthread_self(), sleeptime);    
-	sleep(sleeptime);	
 
-	sem_wait(&searchlock);
-	numsearchers++;
-	printf("added searcher! current # of searchers  %d\n", numsearchers);
-	if(numsearchers == 1) sem_wait(&noSearchers);
-	sem_post(&searchlock);
-	conductor = root;
-	while ( conductor != NULL ) {
-	    printf( "Searcher %u found %d\n", pthread_self(), conductor->data);
-	    conductor = conductor->next;
+	while(1){    
+		sem_wait(&searchlock);
+		numsearchers++;
+		printf("added searcher! current # of searchers  %d\n", numsearchers);
+		if(numsearchers == 1) sem_wait(&noSearchers);
+		sem_post(&searchlock);
+		
+		conductor = root;
+		while ( conductor != NULL ) {
+	    		printf( "Searcher %u found %d\n", pthread_self(), conductor->data);
+	    		conductor = conductor->next;
+		}
+
+
+		sem_wait(&searchlock);
+		numsearchers--;
+		printf("search complete! current # of searchers %d\n", numsearchers);
+		if(numsearchers == 0) sem_post(&noSearchers);
+		sem_post(&searchlock);
 	}
-	sem_wait(&searchlock);
-	numsearchers--;
-	printf("search complete! current # of searchers %d\n", numsearchers);
-	if(numsearchers == 0) sem_post(&noSearchers);
-	sem_post(&searchlock);
-	return 0;
 }
 
 void *insert(void *list)
