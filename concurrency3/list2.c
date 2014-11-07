@@ -1,26 +1,26 @@
 #define NUM_SEARCHERS 4
-#define NUM_INSERTERS 2
+#define NUM_INSERTERS 4
 #define NUM_DELETERS 2
 
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <time.h>		// required for srand use only
 #include <pthread.h>
 #include <semaphore.h>
 #include "lib.h"
 
-void * searcher(void * list);
-void * inserter(void * list);
-void * deleter(void * list);
+void * searcher(void * head);
+void * inserter(void * head);
+void * deleter(void * head);
 
+node_t * list = NULL;
 sem_t read_sem, write_sem;
 
 int main()
 {
 	int rc;
 	long t;
-	node_t * list = new_list();
-	list->data = 4;
 	pthread_t searchers[NUM_SEARCHERS];
 	pthread_t inserters[NUM_INSERTERS];
 	pthread_t deleters[NUM_DELETERS];
@@ -62,13 +62,7 @@ int main()
 
 	for (t = 0; t < NUM_DELETERS; t++) {
 		pthread_join(deleters[t], NULL);
-	}	
-
-	int value;
-	sem_getvalue(&read_sem, &value);
-	printf("read_sem: %d/%d\n", value, NUM_SEARCHERS);
-	sem_getvalue(&write_sem, &value);
-	printf("write_sem: %d/%d\n", value, 1);
+	}
 
 	sem_destroy(&read_sem);
 	sem_destroy(&write_sem);
@@ -77,57 +71,60 @@ int main()
 	exit(0);
 }
 
-void * searcher(void * list)
+void * searcher(void * head)
 {
-	node_t * nlist = (node_t *) list;
+	node_t * list = (node_t *) head;
 
 	sem_wait(&read_sem);
-	printf("read_sem LOCKED\n");
 
-	printf("searching...\n");
-	print_list(nlist);
+	srand(time(NULL));
+	int val = rand()%100;
+
+	printf("search for %d, result: %d\n", val, search_by_value(list, val));
+	print_list(list);
 
 	sem_post(&read_sem);
-	printf("read_sem UNLOCKED\n");
 
 	return NULL;
 }
 
-void * inserter(void * list)
+void * inserter(void * head)
 {
-	node_t * nlist = (node_t *) list;
+	node_t * list = (node_t *) head;
+	srand(time(NULL));
+	int val = rand()%100;
 
 	sem_wait(&write_sem);
-	printf("write_sem LOCKED\n");
 
-	printf("inserting...\n");
-	print_list(nlist);
+	printf("inserting %d\n", val);
+	list = insert_node(list, val);
+	print_list(list);
 
 	sem_post(&write_sem);
-	printf("write_sem UNLOCKED\n");
 
 	return NULL;
 }
 
-void * deleter(void * list)
+void * deleter(void * head)
 {
+	node_t * list = (node_t *) head;
+	srand(time(NULL));
+	int val = rand()%100;
 	long t;
 
 	sem_wait(&write_sem);
-	printf("write_sem LOCKED\n");
 	for(t = 0; t < NUM_SEARCHERS; t++){
 		sem_wait(&read_sem);
-		printf("read_sem LOCKED\n");
 	}
 
-	printf("deleting...");
+	printf("removing %d\n", val);
+	list = remove_node(list, val);
+	print_list(list);
 
 	for(t = 0; t < NUM_SEARCHERS; t++){
 		sem_post(&read_sem);
-		printf("read_sem UNLOCKED\n");
 	}
 	sem_post(&write_sem);
-	printf("write_sem UNLOCKED\n");
 
 	return NULL;
 }
