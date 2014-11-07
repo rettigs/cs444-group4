@@ -92,13 +92,17 @@ void * inserter(void * head)
 {
 	node_t * list = (node_t *) head;
 	srand(time(NULL));
-	int val = rand()%100;
+	int val;
+	long t;
 
 	sem_wait(&write_sem);
 
-	printf("inserting %d\n", val);
-	list = insert_node(list, val);
-	print_list(list);
+	for (t = 0; t < 20; t++) {
+		val = rand()%100;
+		printf("inserting %d\n", val);
+		list = insert_node(list, val);
+		print_list(list);
+	}
 
 	sem_post(&write_sem);
 
