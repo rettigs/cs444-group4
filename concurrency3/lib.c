@@ -57,6 +57,21 @@ int pop(node_t ** head)
     return retval;
 }
 
+int search_by_value(node_t * head, int val)
+{
+    node_t * temp = head;
+
+    while(temp) {
+        if (temp->data == val) {
+            return 1;
+        } else {
+            temp = temp->next;
+        }
+    }
+
+    return 0;
+}
+
 node_t * remove_by_value(node_t * curr, int val)
 {
     // are we at the end of the list
