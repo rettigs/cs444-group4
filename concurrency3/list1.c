@@ -92,7 +92,7 @@ delete_func(struct node **list, int value)
 	struct node *prev;
 
 	sem_wait(&insert_sem);	// prevent inserters
-	printf("waiting on search semaphor");
+	printf("waiting on search semaphor\n");
 	for (i = 0; i < NUM_SEARCHERS; i++) {	// prevent all searchers
 		sem_wait(&search_sem);
 	}
@@ -180,7 +180,7 @@ int main()
 #endif
 	pthread_t searchers[NUM_SEARCHERS];
 	pthread_t inserters[NUM_INSERTERS];
-	//pthread_t deleters[NUM_DELETERS];
+	pthread_t deleters[NUM_DELETERS];
 
 	int i;
 	for(i = 0; i < NUM_INSERTERS; i++){
@@ -194,8 +194,7 @@ int main()
 		printf("Deleter %d START %d END %d\n", i, delete_info[i].start, delete_info[i].end); 
 	}
 
-	int rc;
-	long t;
+	int rc; long t;
 	for (t = 0; t < NUM_INSERTERS; t++) {
 		rc = pthread_create(&inserters[t], NULL, insert, (void *)&insert_info[t]);
 		if (rc) {
@@ -212,8 +211,22 @@ int main()
 		}
 	}
 
-	pthread_exit(NULL);
+	for(t = 0; t < NUM_DELETERS; t++){
+		rc = pthread_create(&deleters[t], NULL, delete, (void *)&delete_info[t]);
+		if(rc){	
+			printf("ERROR: return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
+	}
 
+	//join threads (I am doing this free the list post operation)
+	for(t = 0; t < NUM_SEARCHERS; t++) pthread_join(searchers[t], NULL);
+	for(t = 0; t < NUM_INSERTERS; t++) pthread_join(inserters[t], NULL);
+	for(t = 0; t < NUM_DELETERS; t++) pthread_join(deleters[t], NULL);
+	//pthread_exit(NULL);
+
+	//post join I want to iterater throught the list and print the elements that are left and then free them before exit
+ 	return 0;
 }
 
 
@@ -250,10 +263,11 @@ void *delete(void *deletevalues)
 	int i, ret;
 	struct delete_info *stufftodelete = (struct delete_info *)deletevalues;
 
+	printf("Deleter %d START %d END %d\n", i, delete_info[i].start, delete_info[i].end); 
 	for(i = stufftodelete->start; i <= stufftodelete->end; i++){
 		ret = delete_func(&root, i);
 		if(ret) printf("Thread %u deleted %d\n", pthread_self(), i);
-		else printf("Tread %u could not find %d", pthread_self(), i); 
+		else printf("Tread %u could not find %d\n", pthread_self(), i); 
 	}
 	return 0;
 }
