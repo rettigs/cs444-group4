@@ -9,11 +9,12 @@ typedef struct node {
 	struct node * next;
 } node_t;
 
-node_t * new_list(int val);
+node_t * new_list();
 void free_list(node_t ** head);
 void print_list(node_t * head);
 
-void push(int val, node_t ** head);	// add node to front of list
+void push(node_t ** head, int val);	// add node to front of list
 int pop(node_t ** head);			// remove node from front of list
+node_t * remove_by_value(node_t * curr, int val); // recursively remove node containing val
 
 #endif

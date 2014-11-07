@@ -1,9 +1,9 @@
 #include "lib.h"
 
-node_t * new_list(int val)
+node_t * new_list()
 {
 	node_t * head = malloc(sizeof(node_t));
-	head->data = val;
+	head->data = -1;
 	head->next = NULL;
 
 	return head;
@@ -32,7 +32,7 @@ void print_list(node_t * head)
     printf("\n");
 }
 
-void push(int val, node_t ** head)
+void push(node_t ** head, int val)
 {
 	node_t * new_node = malloc(sizeof(node_t));
 	new_node->data = val;
@@ -55,4 +55,27 @@ int pop(node_t ** head)
     *head = next_node;
 
     return retval;
+}
+
+node_t * remove_by_value(node_t * curr, int val)
+{
+    // are we at the end of the list
+    if (curr == NULL) {
+        return NULL;
+    }
+
+    // is curr node the one to be deleted
+    if (curr->data == val) {
+        node_t * temp = curr->next;
+
+        free(curr);
+
+        // return new node in order to skip over the removed node
+        return temp;
+    }
+
+    // check rest of list and fix next ptr in case of removed node
+    curr->next = remove_by_value(curr->next, val);
+
+    return curr;
 }
