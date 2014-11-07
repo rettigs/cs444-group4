@@ -19,10 +19,11 @@ int main()
 {
 	int rc;
 	long t;
-	node_t * list = new_list(4);
+	node_t * list = new_list();
+	list->data = 4;
 	pthread_t searchers[NUM_SEARCHERS];
 	pthread_t inserters[NUM_INSERTERS];
-	//pthread_t deleters[NUM_DELETERS];
+	pthread_t deleters[NUM_DELETERS];
 
 	sem_init(&read_sem, 1, NUM_SEARCHERS);
 	sem_init(&write_sem, 0, 1);
@@ -43,12 +44,24 @@ int main()
 		}
 	}
 
+	for(t = 0; t < NUM_DELETERS; t++){
+		rc = pthread_create(&deleters[t], NULL, deleter, (void *)list);
+		if(rc){
+			printf("ERROR: return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
+	}
+
 	for (t = 0; t < NUM_INSERTERS; t++) {
 		pthread_join(inserters[t], NULL);
 	}
 
 	for (t = 0; t < NUM_SEARCHERS; t++) {
 		pthread_join(searchers[t], NULL);
+	}
+
+	for (t = 0; t < NUM_DELETERS; t++) {
+		pthread_join(deleters[t], NULL);
 	}	
 
 	int value;
@@ -69,13 +82,13 @@ void * searcher(void * list)
 	node_t * nlist = (node_t *) list;
 
 	sem_wait(&read_sem);
-	printf("read_sem obtained\n");
+	printf("read_sem LOCKED\n");
 
 	printf("searching...\n");
 	print_list(nlist);
 
 	sem_post(&read_sem);
-	printf("read_sem released\n");
+	printf("read_sem UNLOCKED\n");
 
 	return NULL;
 }
@@ -85,22 +98,36 @@ void * inserter(void * list)
 	node_t * nlist = (node_t *) list;
 
 	sem_wait(&write_sem);
-	printf("write_sem obtained\n");
+	printf("write_sem LOCKED\n");
 
 	printf("inserting...\n");
 	print_list(nlist);
 
 	sem_post(&write_sem);
-	printf("write_sem released\n");
+	printf("write_sem UNLOCKED\n");
 
 	return NULL;
 }
 
 void * deleter(void * list)
 {
+	long t;
+
 	sem_wait(&write_sem);
-	sem_wait(&read_sem);
+	printf("write_sem LOCKED\n");
+	for(t = 0; t < NUM_SEARCHERS; t++){
+		sem_wait(&read_sem);
+		printf("read_sem LOCKED\n");
+	}
+
 	printf("deleting...");
+
+	for(t = 0; t < NUM_SEARCHERS; t++){
+		sem_post(&read_sem);
+		printf("read_sem UNLOCKED\n");
+	}
+	sem_post(&write_sem);
+	printf("write_sem UNLOCKED\n");
 
 	return NULL;
 }
