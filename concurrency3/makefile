@@ -3,7 +3,7 @@ CFLAGS = -g -Wall
 LFLAGS = 
 INCLUDES = -I/
 LIBS = -lpthread -lrt
-SRC = list.c
+SRC = list1.c
 OBJ = $(SRC:.c=.o)
 MAIN = list
 
