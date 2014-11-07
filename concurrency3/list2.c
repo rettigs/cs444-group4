@@ -10,9 +10,9 @@
 #include <semaphore.h>
 #include "lib.h"
 
-void * searcher(void * head);
-void * inserter(void * head);
-void * deleter(void * head);
+void * searcher();
+void * inserter();
+void * deleter();
 
 node_t * list = NULL;
 sem_t read_sem, write_sem;
@@ -25,11 +25,12 @@ int main()
 	pthread_t inserters[NUM_INSERTERS];
 	pthread_t deleters[NUM_DELETERS];
 
+	srand(time(NULL));
 	sem_init(&read_sem, 1, NUM_SEARCHERS);
 	sem_init(&write_sem, 0, 1);
 
 	for (t = 0; t < NUM_INSERTERS; t++) {
-		rc = pthread_create(&inserters[t], NULL, inserter, (void *)list);
+		rc = pthread_create(&inserters[t], NULL, inserter, NULL);
 		if (rc) {
 			printf("ERROR: return code from pthread_create() is %d\n", rc);
 			exit(-1);
@@ -37,7 +38,7 @@ int main()
 	}
 
 	for(t = 0; t < NUM_SEARCHERS; t++){
-		rc = pthread_create(&searchers[t], NULL, searcher, (void *)list);
+		rc = pthread_create(&searchers[t], NULL, searcher, NULL);
 		if(rc){
 			printf("ERROR: return code from pthread_create() is %d\n", rc);
 			exit(-1);
@@ -45,7 +46,7 @@ int main()
 	}
 
 	for(t = 0; t < NUM_DELETERS; t++){
-		rc = pthread_create(&deleters[t], NULL, deleter, (void *)list);
+		rc = pthread_create(&deleters[t], NULL, deleter, NULL);
 		if(rc){
 			printf("ERROR: return code from pthread_create() is %d\n", rc);
 			exit(-1);
@@ -71,15 +72,11 @@ int main()
 	exit(0);
 }
 
-void * searcher(void * head)
+void * searcher()
 {
-	node_t * list = (node_t *) head;
-
 	sem_wait(&read_sem);
 
-	srand(time(NULL));
 	int val = rand()%100;
-
 	printf("search for %d, result: %d\n", val, search_by_value(list, val));
 	print_list(list);
 
@@ -88,16 +85,14 @@ void * searcher(void * head)
 	return NULL;
 }
 
-void * inserter(void * head)
+void * inserter()
 {
-	node_t * list = (node_t *) head;
-	srand(time(NULL));
 	int val;
 	long t;
 
 	sem_wait(&write_sem);
 
-	for (t = 0; t < 20; t++) {
+	for (t = 0; t < 5; t++) {
 		val = rand()%100;
 		printf("inserting %d\n", val);
 		list = insert_node(list, val);
@@ -109,10 +104,8 @@ void * inserter(void * head)
 	return NULL;
 }
 
-void * deleter(void * head)
+void * deleter()
 {
-	node_t * list = (node_t *) head;
-	srand(time(NULL));
 	int val = rand()%100;
 	long t;
 
