@@ -453,5 +453,5 @@ module_init(osurd_init);
 module_exit(osurd_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("CS444-Group 4")
+MODULE_AUTHOR("CS444-Group 4");
 MODULE_DESCRIPTION("RAM Disk driver that allocates chunk memory and presents it as a block device");

@@ -256,6 +256,16 @@ config BLK_DEV_LOOP
 
 	  Most users will answer N here.
 
+config RAM_DISK
+	tristate "CS444-Group 4 RAM Disk"
+	default m
+	depends on BLK_DEV_CRYPTOLOOP
+	---help---
+	  RAM Disk device driver which allocates a chunk of memory and  
+	  presents it as a block device. Also includes encryption from 
+	  the CryptoAPI to allow the block device to encrypt/decrypt
+	  data when it is written and read.
+
 config BLK_DEV_CRYPTOLOOP
 	tristate "Cryptoloop Support"
 	select CRYPTO
