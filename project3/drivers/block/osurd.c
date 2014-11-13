@@ -76,7 +76,9 @@ static struct osurd_dev *Devices = NULL;
 // For debugging crypto.
 static void data_view(unsigned char *buf, unsigned int len)
 {
-	while (len--)
+	int i = 20;
+
+	while (len-- && i-->0)
 		printk("%02x", *buf++);
 	printk("\n");
 }

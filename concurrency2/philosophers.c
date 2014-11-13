@@ -39,7 +39,7 @@ void *table(void *philosopher)
 	char *ph = (char *) philosopher;
 	printf("%s has arrived at the table\n", ph);
 
-	while (true) {
+	while (1) {
 		think((void *)ph);
 		get_forks((void *)ph);
 		eat((void *)ph);
