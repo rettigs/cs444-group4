@@ -289,7 +289,7 @@ static void *slob_page_alloc(struct slob_page *sp, size_t size, int align)
 		/*Check for enough space*/
 		if (avail >= units + delta) { 
 			/*Check for first run or better difference*/
-			if (best_cur == NULL || avail - (units + delta) < best_fit) {
+			if (best_cur == NULL || avail - (units + delta) < best_diff) {
 				best_prev = prev;
 				best_cur = cur;
 				best_aligned = aligned;
