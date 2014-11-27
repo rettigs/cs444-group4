@@ -1,5 +1,5 @@
 TEX = pdflatex
-TEX_TARGET = project2_group_writeup
+TEX_TARGET = project4_group_writeup
 TEX_SOURCE = ${TEX_TARGET}.tex
 
 
@@ -22,7 +22,7 @@ dvi:		${TEX_TARGET}.tex
 		latex $(TEX_TARGET).tex
 
 tarball: 	pdf
-		tar -cvjf CS44_group4.tar.bz2 ${TEX_SOURCE} ${TEX_TARGET}.pdf makefile
+		tar -cvjf CS444_group4.tar.bz2 ${TEX_SOURCE} ${TEX_TARGET}.pdf makefile
 
 .PHONY: clean
 

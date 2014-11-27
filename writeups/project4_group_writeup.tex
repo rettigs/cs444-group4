@@ -23,28 +23,13 @@
 \section{Design}
 Based upon the literature in Chapter 12. Memory Management of the textbook \textit{Linux Kernel Development, 3rd Edition}, Linux Kernel developer blogs and websites, and the descriptive information in comments within the \texttt{/mm/slob.c} file, we updated the \texttt{slob.c} file to use the best-fit algorithm as opposed to the first-fit algorithm for SLAB block allocation.
 
-To implement the SLAB best-fit algorithm, we had to first understand the first-fit algorithm that was currently in-use for SLOB allocations. The first-fit implementation 
+To implement the SLAB best-fit algorithm, we had to first understand the first-fit algorithm that was currently in-use for SLOB allocations. The first-fit implementation searches through the list of available pages, locates the first page with enough free space to accomodate the requested space, and then searches within that page for the first available block to allocate. Our best-fit implementation contrasts this by searching through the list of available pages, locates the first page with enough free space to accommodate the requested space, and then searches within that page for the block with the closest amount of free space to the requested space, and then it allocates the space.
 
-The device driver contains functions to allow device initialization, allocation, write into, and read from functionality, including optional queue structures for processing incoming requests. The request handling functionality also maintains the ability to do block request clustering and fulfillment in cases of sequential memory locations. The request handling provides requests modes that do simple request management (RM\_SIMPLE), FIFO queue management (RM\_NOQUEUE), and complete clustering and efficiency management (RM\_FULL) options.
+    Since the slob\_page\_alloc() function controls the search within a page, and the logic for the first-fit algorithm occurs within it, we modified this function to allow for the best-fit algorithm instead. Within that function, instead of immediately allocating at the first available block, we moved all relevant allocation code to run only at the end of the loop, after a best-fit block is found. When that available block is found, we have a secondary check to see if the difference is smaller than the previous best difference. This will result in having the best difference at completion of the loop. The saved best variables are prev, cur, aligned, delta, and the difference.
 
-Using the AES-128 encryption algorithm, available through the CryptAPI, the device encrypts during initialization and after the completion of each write/read request. The device driver also decrypts at the beginning of any read/write request.
+As in our previous assignments, we maintained our team choice of using Git and GitHub as our version control platform. We updated the \texttt{mm/slob.c} file with our best-fit SLAB allocator code.
 
-The device driver operates in a simple format of creating and allocating space on initial request for a RAM\_DISK device, immediate encryption using the encryption key and the CryptAPI module calls, and decrypt and re-encrypt calls for each read/write request that comes into the queue and is serviced.
-
-As in our previous assignments, we maintained our team choice of using Git and GitHub as our version control platform. We added the necessary \texttt{drivers/block/osurd.c} file with our RAM\_DISK device driver code and updated the \texttt{drivers/block/Kconfig} and \texttt{drivers/block/Makefile} files with the new option accordingly. Our \texttt{drivers/block/Kconfig} now contains the following additional option:\\\\
-\texttt{config RAM\_DISK\\
-\indent tristate ``CS444-Group 4 RAM Disk''\\
-\indent default m\\
-\indent depends on BLK\_DEV\_CRYPTOLOOP\\
-\indent ---help---\\
-\indent\indent RAM Disk device driver which allocates a chunk of memory and\\  
-\indent\indent presents it as a block device. Also includes encryption from\\
-\indent\indent the CryptoAPI to allow the block device to encrypt/decrypt data\\
-\indent \indent when it is written and read.}\\
-
-The configuration of this option allowed us to formalize the dependency between our RAM\_DISK module and the BLK\_DEV\_CRYPTOLOOP module so that the \texttt{modprobe} command would recognize and load the dependent modules in order for our block device to properly utilize the CryptAPI.
-
-With the device driver added and enabled, we followed the standard steps for compiling, building, and linking together the Linux Kernel, as illustrated below:
+With the best-fit SLOB allocator updated, we followed the standard steps for compiling, building, and linking together the Linux Kernel, as illustrated below:
 
 \begin{enumerate}
 	\item Set the kernel configuration options:\\\\
@@ -77,9 +62,9 @@ Using a clean Linux Kernel 3.0.4 source tree, we attempted to get the kernel bui
 \indent make: *** [mm] Error 2\\
 \indent make: *** Waiting for unfinished jobs....}\\
 
-This issue was resolved by locating and fixing the incorrectly labeled variable; \texttt{best\_fit} should have been \texttt{best\_diff}.
+This issue was resolved by locating the error (\texttt{mm/slob.c:292}) and fixing the incorrectly labeled variable; \texttt{best\_fit} should have been \texttt{best\_diff}.
 
-After several attempts to resolve this issue via removing our RAM Disk module from the source tree, using the \texttt{depmod} command to attempt to fix module config files, and the \texttt{defconfig} command to update any broken module references, we finally determined that the problem was that some modules were already compiled and in the source tree when we obtained it from the \texttt{os-class.engr.oregonstate.edu} server, and that a subsequent \texttt{make clean} command had wiped those out. We re-pulled a new copy from the server and applied our RAM Disk device driver patches to the source tree in order to fix the build process.
+Once the Linux Kernel successfully compiled and loaded, we rebooted and selected the updated kernel at the Grub boot menu. We then compiled our \texttt{test.c} file so that we could validate that (1) the SLOB allocator was functioning correctly, (2) that it was providing timings and usage statistics, and (3) that those statistics were in-line with the assumption that SLOB requires significant overhead and performance reductions compared to the SLAB or SLUB algorithms.
 		
 \section{Version Control Log}
 
@@ -107,21 +92,11 @@ The following version control log details all changes that were made to add the 
 & \multicolumn{1}{c}{\textbf{commit message}} & \multicolumn{1}{c}{\textbf{MF}}
 & \multicolumn{1}{c}{\textbf{AL}} & \multicolumn{1}{c|}{\textbf{DL}} \\ \hline
 
-\hline 1 & 2014-10-09 & \href{https://github.com/nelsonni/cs444-group4/commit/d85d1e326a1dcff2678f3c9804c535df9a7f0db7}{base code, as pulled from os-class.engr.oregonstate.edu} & 36778 & 14644499 & 0 \\
-\hline 2 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/b114dc461867e0fb5cea8c01c5f05dfebecc1be2}{project directories clean-up, all projects now reside in their own projectX folder} & 36776 & 14644304 & 0 \\
-\hline 3 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/0bb5ccfc4b5b102ba8c6a3f05467579f0a67b3a6}{additional clean-up from project folders} & 36776 & 0 & 14644304 \\
-\hline 4 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/af58484cdeb03c7c7e21449bec642058e6b19b82}{baseline for project2} & 37576 & 14652316 & 0 \\
-\hline 5 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/39e794e6a06e73b6a2d85bdb04959abcccf94b62}{shortest-seek-time-first IO scheduler added} & 1 & 225 & 0 \\
-\hline 6 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/8b01e645062d5a732141e3424968d7e31a8f95f8}{added rules for SSTF IO scheduler to Kconfig and Make for builds} & 2 & 9 & 0 \\
-\hline 7 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/9ab2238a0a52b6679bf4f06ab598135e8c37893b}{write-up latex documents now live in /writeups} & 1 & 64 & 0 \\
-\hline 8 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/78db90ba9f2fa0c4e15b24608ab9a1da653ba4ab}{fixed output messages to be consistent and useful} & 1 & 16 & 20 \\
-\hline 9 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/f54bebb917d24b2d719438cb55fc1c6a9a21c719}{initial draft of Project 2 Group Write-up document} & 1 & 70 & 0 \\
-\hline 10 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/af2e0bbca66e78f4c5061ef8b37298ebd627806d}{resolved build errors resulting from filename differences} & 3 & 222 & 222 \\
-\hline 11 & 2014-10-27 & \href{https://github.com/nelsonni/cs444-group4/commit/f2aace4adcd788030ee0aced10f0a141c3a55b99}{additional information about the Project 2 build errors provided, including solution, in the LaTeX document} & 1 & 1 & 1 \\
-\hline 12 & 2014-10-06 & \href{https://github.com/nelsonni/cs444-group4/commit/40b2feb8e6a8f4ba3a9e654dcc7d6da7aff70867}{finalized by removing all dev files, makefile updated accordingly} & 3 & 87 & 429 \\
-\hline 13 & 2014-10-09 & \href{https://github.com/nelsonni/cs444-group4/commit/e295dc6b3888f29e76f1c994cba3933223d0e48c}{created initial project3 folder and put osurd.c file inside} & 1 & 455 & 0 \\
-\hline 14 & 2014-10-09 & \href{https://github.com/nelsonni/cs444-group4/commit/4ff66e6417755868fe4daa950c8ed490af9653b8}{setup project3 folder more appropriately this time} & 37577 & 30942 & 0 \\
-\hline 15 & 2014-10-09 & \href{https://github.com/nelsonni/cs444-group4/commit/f70ffd11b3fa45299bbbac1f9311156e085b6500}{updates to enable the RAM\_DISK option} & 3 & 12 & 1 \\
+\hline 1 & 2014-11-24 & \href{https://github.com/nelsonni/cs444-group4/commit/5d032ca59bf683fa890c92344159fec59e3c801a}{project 4, slob.c updated to use best-fit algorithm for SLOB block allocations} & 0 & 779 & 0 \\
+\hline 2 & 2014-11-24 & \href{https://github.com/nelsonni/cs444-group4/commit/95b3428d56dfd87e232900ba189ffb7336907a87}{concurrency5, initial work on problem 1 started} & 0 & 104 & 0 \\
+\hline 3 & 2014-11-24 & \href{https://github.com/nelsonni/cs444-group4/commit/95a00d6efeb745d6a4c82bd99968b65aa35f10c4}{updated gitignore to allow for /linux source tree folder, single location for builds on test box} & 1 & 31137 & 0 \\
+\hline 4 & 2014-11-24 & \href{https://github.com/nelsonni/cs444-group4/commit/eaff6743cafe54d4193115ef11d6ad82b14d0a12}{updated slob.c to include fix for best\_fit variable being undeclared, when it should be best\_diff variable instead} & 2 & 0 & 0 \\
+\hline 5 & 2014-11-24 & \href{https://github.com/nelsonni/cs444-group4/commit/5b2e1a047ff1e479bc6f2cf4ca93159f7e415dae}{in-process development for project4} & 73258 & 0 & 0 \\
 \hline
 \end{tabular}
 
