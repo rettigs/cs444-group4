@@ -10,7 +10,7 @@ MAIN = prob1
 .PHONY: depend clean
 
 all:	$(MAIN)
-		@echo	The solution to the Problem 1 has been compiled
+		@echo	The solution to Problem 1 has been compiled
 
 $(MAIN): $(OBJ)
 		$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJ) $(LFLAGS) $(LIBS)
